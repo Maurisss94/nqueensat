@@ -12,7 +12,7 @@ decideix(CNF,Lit),
 simplif(Lit,CNF,CNFS),
 
 % crida recursiva amb la CNF i la interpretacio actualitzada
-append(I, [Lit], R),
+append([Lit], I, R),
 sat(CNFS,R,M).
 
 %%%%%%%%%%%%%%%%%%
@@ -21,13 +21,10 @@ sat(CNFS,R,M).
 % -> el segon parametre sera un literal de CNF
 %  - si hi ha una clausula unitaria sera aquest literal, sino
 %  - un qualsevol o el seu negat.
-decideix([[X|_]|[]], X):- !.
-decideix([X|_], Lit):- X = [_|_], decideixN(X, Lit), !.
-decideix([_|Y], Lit):- decideix(Y, Lit).
-
-decideixN([X], X).
-
-
+% Mauro:
+decideix(L, X):- member([X], L), !.
+decideix([[L|_]|_], L).
+decideix([[L|_]|_], P):- P is -L.
 
 %%%%%%%%%%%%%%%%%%%%%
 % simplif(Lit, F, FS)
@@ -35,7 +32,13 @@ decideixN([X], X).
 % -> el tercer parametre sera la CNF que ens han donat simplificada:
 %  - sense les clausules que tenen lit
 %  - treient -Lit de les clausules on hi es, si apareix la clausula buida fallara.
+% Mauro:
 simplif(_, [], []).
-simplif(X, [Y|XS], LS):- Y \= [_|_], M is -X, M =:= Y, simplif(X, XS, LS), !.
-simplif(X, [CNF|CNFS], [F|FS]) :- CNF = [_|_], simplif(X, CNF, F), simplif(X, CNFS, FS), !.
+simplif(X, [L|LS], CNFS) :- member(X, L),!, simplif(X, LS, CNFS),!.
+simplif(X, [Y|XS], LS):- M is -X,
+                                            append(A, [M|MS], Y),!,
+                                            append(A, MS, RES), RES \=[],
+                                            simplif(X, XS, CUACNFS),
+                                            append([RES], CUACNFS, LS),!.
+simplif(X, [CNF|CNFS], [F|FS]) :-  CNF = [_|_], simplif(X, CNF, F), simplif(X, CNFS, FS), !.
 simplif(X, [Head|Tail], [Head|TailResult]) :- Head \= [_|_], simplif(X, Tail, TailResult), !.
